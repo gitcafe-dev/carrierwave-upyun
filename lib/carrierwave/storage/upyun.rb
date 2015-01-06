@@ -1,6 +1,5 @@
 # encoding: utf-8
 require 'carrierwave'
-
 begin
   require 'rest_client'
   RestClient.log = nil
@@ -42,28 +41,50 @@ module CarrierWave
         private_class_method :new
 
         def rest_client
-          @rest_client ||= RestClient::Resource.new("#{@host}/#{@upyun_bucket}", :user => @upyun_username, :password => @upyun_password)
+          @rest_client ||= RestClient::Resource.new("#{@host}/#{@upyun_bucket}")
         end
 
         def put(path, payload, headers = {})
-          rest_client[escaped(path)].put(payload, headers)
+          rest_client[escaped(path)].put(payload, auth_header("put", path, payload).merge(headers))
         end
 
         def get(path, headers = {})
-          rest_client[escaped(path)].get(headers)
+          rest_client[escaped(path)].get(auth_header("get", path).merge(headers))
         end
 
         def delete(path, headers = {})
-          rest_client[escaped(path)].delete(headers)
+          rest_client[escaped(path)].delete(auth_header("delete", path).merge(headers))
         end
 
         def post(path, payload, headers = {})
-          rest_client[escaped(path)].post(payload, headers)
+          rest_client[escaped(path)].post(payload, auth_header("post", path, payload).merge(headers))
         end
 
         def escaped(path)
           CGI.escape(path)
         end
+
+        private
+          def auth_header(method, url, file = nil)
+            date = Time.now.gmtime.strftime("%a, %d %b %Y %H:%M:%S GMT")
+            {
+              "Expect" => "",
+              "Date" => date,
+              "Content-Length" => (file ? file.size : 0),
+              "Authorization" => "UpYun #{@upyun_username}:#{signature(file, date, method, url)}"
+            }
+          end
+
+          def signature(file, date, method, url)
+            str = [
+              method.upcase,
+              escaped("#{@upyun_bucket}/#{url}"),
+              date,
+              file ? file.size : 0,
+              Digest::MD5.hexdigest(@upyun_password)
+            ].join("&")
+            Digest::MD5.hexdigest(str)
+          end
       end
 
       class File
