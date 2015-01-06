@@ -51,10 +51,10 @@ describe "Upload" do
       puts Benchmark.measure {
         @photo = Photo.create(:image => f)
       }
-      @photo.errors.count.should == 0
-      open(@photo.image.url).should_not == nil
-      open(@photo.image.url).size.should == f.size
-      open(@photo.image.small.url).should_not == nil
+      expect(@photo.errors.count).to eq 0
+      expect(open(@photo.image.url)).not_to eq nil
+      expect(open(@photo.image.url).size).to eq f.size
+      expect(open(@photo.image.small.url)).not_to eq nil
     end
   end
 
@@ -74,7 +74,7 @@ describe "Upload" do
       ObjectSpace.each_object(CarrierWave::Storage::UpYun::Connection) do |conn|
         instances << conn if conn.upyun_bucket == 'bucket999'
       end
-      instances.should have(1).item
+      expect(instances.size).to eq 1
     end
   end
 end
