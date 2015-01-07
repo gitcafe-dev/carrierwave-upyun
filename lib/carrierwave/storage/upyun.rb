@@ -45,23 +45,19 @@ module CarrierWave
         end
 
         def put(path, payload, headers = {})
-          rest_client[escaped(path)].put(payload, auth_header("put", path, payload).merge(headers))
+          rest_client[path].put(payload, auth_header("put", path, payload).merge(headers))
         end
 
         def get(path, headers = {})
-          rest_client[escaped(path)].get(auth_header("get", path).merge(headers))
+          rest_client[path].get(auth_header("get", path).merge(headers))
         end
 
         def delete(path, headers = {})
-          rest_client[escaped(path)].delete(auth_header("delete", path).merge(headers))
+          rest_client[path].delete(auth_header("delete", path).merge(headers))
         end
 
         def post(path, payload, headers = {})
-          rest_client[escaped(path)].post(payload, auth_header("post", path, payload).merge(headers))
-        end
-
-        def escaped(path)
-          CGI.escape(path)
+          rest_client[path].post(payload, auth_header("post", path, payload).merge(headers))
         end
 
         private
@@ -70,15 +66,14 @@ module CarrierWave
             {
               "Expect" => "",
               "Date" => date,
-              "Content-Length" => (file ? file.size : 0),
-              "Authorization" => "UpYun #{@upyun_username}:#{signature(file, date, method, url)}"
+              "Authorization" => "UpYun #{@upyun_username}:#{signature(method, date, url, file)}"
             }
           end
 
-          def signature(file, date, method, url)
+          def signature(method, date, url, file)
             str = [
               method.upcase,
-              escaped("#{@upyun_bucket}/#{url}"),
+              "/#{@upyun_bucket}/#{url}",
               date,
               file ? file.size : 0,
               Digest::MD5.hexdigest(@upyun_password)
